@@ -24,7 +24,7 @@ class LDA:
             x = X[y == i, :]
             self.params['mu'][i] = np.mean(x, axis=0)
             x = x - self.params['mu'][i]
-            Sigma += (x.transpose()).dot(x)
+            Sigma += x.T @ x
             if probas is None:
                 self.probas[i] = len(x) / self.n_obs
         self.params['Sigma'] = Sigma / (self.n_obs - self.n_classes)
@@ -36,8 +36,8 @@ class LDA:
         M = np.row_stack(list(self.params['mu'].values()))
         # orthogonalise
         sqrt_inv_D = np.diag(np.sqrt(1 / self.params['D']))
-        X_star = X.dot(self.params['U']).dot(sqrt_inv_D)
-        M_star = M.dot(self.params['U']).dot(sqrt_inv_D)
+        X_star = X @ self.params['U'] @ sqrt_inv_D
+        M_star = M @ self.params['U'] @ sqrt_inv_D
         for i in range(self.n_classes):
             self.deltas[:, i] = self._get_discriminant(
                 X_star, 
@@ -55,7 +55,7 @@ class LDA:
 
     def _get_discriminant(self, X_star, mu_star, pi):
         delta =  (
-            np.dot(X_star, mu_star) - 0.5 * np.dot(mu_star.T, mu_star)
+            X_star @ mu_star - 0.5 * mu_star.T @ mu_star
             + np.log(pi)
         )
         return delta
@@ -63,7 +63,7 @@ class LDA:
     def _find_line_params(self, mu1, mu2, Sigma, pi1, pi2):
         prec_mat = np.linalg.inv(Sigma)
         m = (mu1 + mu2) / 2
-        w = prec_mat.dot(mu2 - mu1)
+        w = prec_mat @ (mu2 - mu1)
         k = np.log(pi2 / pi1)
         beta =  - w[0] / w[1]
         intercept =  -k + m[1] - m[0] * beta
@@ -83,8 +83,8 @@ class LDA:
             x2 = self.train_X[self.train_y != class1, :]
             mu2 = np.mean(x2, axis=0)
             Sigma = (
-                (x1 - mu1).transpose().dot(x1 - mu1)
-                + (x2 - mu2).transpose().dot(x2 - mu2)
+                (x1 - mu1).T @ (x1 - mu1)
+                + (x2 - mu2).T @ (x2 - mu2)
             ) / (self.n_obs - 2)
             if equal_prob:
                 pi1 = pi2 = 0.5
@@ -153,8 +153,8 @@ class QDA:
         def _compute_delta(x):
             return (
                 -0.5 * np.log(D).sum()
-                -0.5 * (np.dot(U, (x - mu))).T.dot(inv_D).dot(
-                    np.dot(U, (x - mu))) + np.log(pi)
+                -0.5 * (U @ (x - mu)).T  @ inv_D @ U @ (x - mu) 
+                + np.log(pi)
             )
         delta = np.apply_along_axis(_compute_delta, 1, X)
         return delta
