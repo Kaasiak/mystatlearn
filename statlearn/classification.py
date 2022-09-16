@@ -7,6 +7,12 @@ class Classifier:
         self.train_y = None
     
     def fit(self, X: np.ndarray, y: np.ndarray) -> None:
+        """
+        Fits the model to the training data X and training labels y.
+
+        :param X: training data
+        :param y: training labels
+        """
         self.train_X = X
         self.train_y = y
 
@@ -14,12 +20,22 @@ class Classifier:
         ...
     
     def transform(self) -> np.ndarray:
+        """
+        Returns the fitted labels on the training data.
+        """
         return self.predict(self.train_X)
     
     def fit_transform(self, X: np.ndarray, y: np.ndarray) -> np.ndarray:
+        """
+        Fits the model to the training data X, and trainig labels y,
+        and returns the fitted values.
+    
+        :param X: training data
+        :param y: training labels
+        """
         self.fit(X, y)
         return self.transform()
-        
+
 
 class LDA(Classifier):
     def __init__(self):
