@@ -1,5 +1,5 @@
 import numpy as np
-from statlearn.regression import LinearResgression
+from mystatlearn.regression import LinearResgression
 
 class BSpline():
 
