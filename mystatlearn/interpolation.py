@@ -195,7 +195,7 @@ class CubicSpline():
             d[j] = (c[j+ 1] - c[j]) / (3 * h[j])
         self.coef = (a, b, c, d)
 
-    def predict(self, x):
+    def interpolate(self, x):
         y_pred = np.zeros(len(x))
         for j in range(0, len(self.X) - 1):
             index = (x >= self.X[j]) & (x <= self.X[j + 1])
