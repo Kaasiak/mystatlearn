@@ -153,6 +153,7 @@ class BSplineRegression(LinearResgression):
             for j in range(0, n):
                     A[i][j] = self.basis.bspline_basis(X[i], j, p)
         super().fit(A, y)
+        self.basis.controls = self.beta
     
     def predict(self, X):
         """
@@ -160,4 +161,4 @@ class BSplineRegression(LinearResgression):
 
         :param X: values for prediction
         """
-        return self.basis.get_spline(X, self.beta)
+        return self.basis.interpolate(X)

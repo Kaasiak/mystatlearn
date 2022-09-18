@@ -1,5 +1,4 @@
 import numpy as np
-# from mystatlearn.regression import LinearResgression
 
 class BSpline():
     """
@@ -10,8 +9,24 @@ class BSpline():
     Implementation based on:
     [1] -  https://en.wikipedia.org/w/index.php?title=De_Boor%27s_algorithm&oldid=1073433593
     """
-    def __init__(self, p, knots=None, type=None, n=None):
+    def __init__(
+            self, p: int, 
+            knots: np.ndarray=None, 
+            controls: np.ndarray=None, 
+            type: str=None, 
+            n: int=None
+        ):
+        """
+        Initialises the B-spline object.
+
+        :param p: the degree of the B-spline curves
+        :param knots: array of knots
+        :param controls: array of control points
+        :param type: if knots is None, one of: 'periodic', 'uniform'
+        :param n: if knots is None, the number of knots
+        """
         self.p = p
+        self.controls = controls
         if  (type is not None) and (n is not None):
             self.knots = self.get_knots(n, p, type)
         elif knots is not None:
@@ -22,20 +37,18 @@ class BSpline():
                  + "points must be provided."
             ))
     
-    def get_spline(
+    def interpolate(
             self, 
             X: np.ndarray, 
-            controls: np.ndarray, 
         ) -> np.ndarray:
         """
         Returns the values of the B-spline curve at X.
 
         :param X: the array of x values
         :param knots: the array of knots
-        :param controls: the array of contol points
         :params p: the degree of the B-spline curve
         """
-        n = len(controls)
+        n = len(self.controls)
         p = self.p
         knots = self.knots
         if n != len(knots) - (p + 1):
@@ -49,7 +62,6 @@ class BSpline():
                 f"Values of X are outside of the support " 
                 + f"[{knots[p]}, {knots[n]})"
             ))
-        self.controls = controls
         y = np.empty(len(X))
         for i in range(0, len(knots) - 1):
             index = (X >= knots[i]) & (X < knots[i + 1])
