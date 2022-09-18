@@ -1,6 +1,16 @@
 import numpy as np
 import plotly.graph_objs as go
-import matplotlib as plt
+import matplotlib as mpl
+import matplotlib_inline
+
+def setup_notebook():
+    matplotlib_inline.backend_inline.set_matplotlib_formats('svg')
+    rcParams = {
+        'font.family' : 'Avenir',
+        'font.size': 12,
+        'axes.linewidth' : 1.5
+    }
+    mpl.rcParams.update(rcParams)
 
 def get_boundaries(model, xlim, ylim, n):
     xx, yy = np.meshgrid(np.linspace(xlim[0], xlim[1], n),
@@ -13,7 +23,7 @@ def plotly_widgets(X, y, xs, title=None, scatter_name=None):
     # create plotly figure with widgets
     fig = go.FigureWidget()
     fig.add_trace(go.Scatter(name=scatter_name))
-    colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    colors = mpl.rcParams['axes.prop_cycle'].by_key()['color']
 
     fig.add_trace(go.Scatter(x=X, y=y, mode='markers', name='data'))
     fig.data[1].marker.color = colors[0]
