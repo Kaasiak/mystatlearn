@@ -6,7 +6,6 @@ class BSpline():
 
     References
     -----
-    Implementation based on:
     [1] -  https://en.wikipedia.org/w/index.php?title=De_Boor%27s_algorithm&oldid=1073433593
     """
     def __init__(
@@ -156,13 +155,29 @@ class BSpline():
 
     
 class CubicSpline():
+    """
+    Generates a a natural cubic spline for interpolation.
+
+    References
+    ----------
+    [1] - https://en.wikipedia.org/wiki/Spline_(mathematics)
+    """
 
     def __init__(self):
+        """
+        Initializes the CubicSpline object.
+        """
         self.X = None
         self.y = None
         self.coef = None
 
-    def fit (self, X, y):
+    def fit (self, X: np.ndarray, y: np.ndarray) -> None:
+        """
+        Fits a cubic spline.
+
+        :param X - array of x values
+        :param y - array of y values
+        """
         self.X = X
         self.y = y
         n = len(X) - 1
@@ -195,7 +210,12 @@ class CubicSpline():
             d[j] = (c[j+ 1] - c[j]) / (3 * h[j])
         self.coef = (a, b, c, d)
 
-    def interpolate(self, x):
+    def interpolate(self, x: np.ndarray) -> np.ndarray:
+        """
+        Returns fitted values of the cubic spline at x.
+
+        :param x: array of x values
+        """
         y_pred = np.zeros(len(x))
         for j in range(0, len(self.X) - 1):
             index = (x >= self.X[j]) & (x <= self.X[j + 1])
@@ -203,13 +223,19 @@ class CubicSpline():
                 y_pred[index] = self._get_j_spline(x[index], j)
         return y_pred
 
-    def _get_j_spline(self, x, j):
+    def _get_j_spline(self, x: np.ndarray, j: int) -> np.ndarray:
+        """
+        Calculates the value of the Cubic spline for a value
+        x in the j-th interpolation interval.
+
+        :param x: array of x values
+        :param j: the interval index
+        """
         (a, b, c, d) = self.coef
-        S = (
+        return (
             a[j] + b[j] * (x - self.X[j]) + c[j] * (x - self.X[j]) ** 2 
             + d[j] * (x - self.X[j]) ** 3
         )
-        return S
 
 
     
