@@ -1,4 +1,5 @@
 import numpy as np
+from mystatlearn.interpolation import BSpline
 
 class Regressor:
     def __init__(self):
@@ -47,6 +48,8 @@ class LinearResgression(Regressor):
         """
         self.train_X = None
         self.train_y = None
+        self.Q = None
+        self.R = None
         self.beta = None
         self.penalty = penalty
         self.C = C
@@ -113,4 +116,48 @@ class LinearResgression(Regressor):
                 np.repeat(1, len(X)),
                 X
         ])
+
+class BSplineRegression(LinearResgression):
+    """
+    Linear Regression with B-Spline basis function.
+
+
+    References
+    ----------
+    Implementation based on:
+    [1] -  https://www.geometrictools.com/Documentation/BSplineCurveLeastSquaresFit.pdf
+    """
+
+    def __init__(self, p, knots=None, type=None, n=None):
+        super().__init__()
+        self.basis = BSpline(p, knots=knots, type=type, n=n)
+
+    def fit(self, X, y):
+        """
+        Fits the B-Spline regression object.
+
+        :param X: training data
+        :param y: training target values
+        """
+        p = self.basis.p
+        knots = self.basis.knots
+        n = len(knots) - (p + 1)
+        m = len(X)
+        if (np.max(X) >= knots[n]) or (np.max(X) < knots[p]):
+            raise(ValueError(
+                f"Values of X are outside of the support " 
+                + f"[{knots[p]}, {knots[n]})"
+            ))
+        A = np.zeros((m, n))
+        for i in range(0, m):
+            for j in range(0, n):
+                    A[i][j] = self.basis.bspline_basis(X[i], j, p)
+        super().fit(A, y)
     
+    def predict(self, X):
+        """
+        Returns the vector of predicted value for data X.
+
+        :param X: values for prediction
+        """
+        return self.basis.get_spline(X, self.beta)
