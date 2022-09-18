@@ -1,5 +1,5 @@
 import numpy as np
-from mystatlearn.interpolation import BSpline
+from mystatlearn.interpolation import BSpline, CubicSpline
 
 class Regressor:
     def __init__(self):
@@ -21,7 +21,7 @@ class Regressor:
     
     def transform(self) -> np.ndarray:
         """
-        Returns the fitted labels on the training data.
+        Returns the fitted values on the training data.
         """
         return self.predict(self.train_X)
     
@@ -156,6 +156,68 @@ class BSplineRegression(LinearResgression):
         self.basis.controls = self.beta
     
     def predict(self, X):
+        """
+        Returns the vector of predicted value for data X.
+
+        :param X: values for prediction
+        """
+        return self.basis.interpolate(X)
+
+
+class CubicSplineRegression(Regressor):
+    """
+    Generates a smoothing cubic spline.
+
+    References
+    ----------
+    [1] - https://en.wikipedia.org/wiki/Smoothing_spline
+    """
+    
+    def __init__(self, penalty):
+        """
+        Initalizes the cubic smoothing spline regression.
+
+        :param penalty: the value of the penalty parameter
+        """
+        self.train_X = None
+        self.train_y = None
+        self.penalty = penalty
+        self.basis = CubicSpline()
+
+    def fit(self, X: np.ndarray, y: np.ndarray):
+        """
+        Fits the model to the training data X and training target values y.
+
+        :param X: training data
+        :param y: training target values
+        """
+        self.train_X = X
+        self.train_y = y
+        h = np.diff(X)
+        n = len(X)
+        Delta = np.zeros((n - 2, n))
+        for i in range(n - 2):
+            for j in range(n):
+                Delta[i, i] = 1/h[i]
+                Delta[i, i + 1] = - 1/h[i] - 1/h[i + 1]
+                Delta[i, i + 2] = 1/h[i + 1]
+        W = np.zeros((n - 2, n - 2))
+        W[0, 0] = (h[0] + h[1]) / 3
+        for i in range(1, n - 2):
+            W[i - 1, i] = h[i] / 6
+            W[i, i - 1] = h[i] / 6
+            W[i, i] = (h[i] + h[i + 1]) / 3
+        A = Delta.T @ np.linalg.inv(W) @ Delta
+        self.fitted = np.linalg.inv(np.eye(n) + self.penalty * A) @ y
+        self.basis.fit(X, self.fitted)
+    
+    def transform(self) -> np.ndarray:
+        """
+        Returns the fitted values on the training data.
+        """
+        return self.fitted
+    
+    def predict(self, X: np.ndarray):
         """
         Returns the vector of predicted value for data X.
 
