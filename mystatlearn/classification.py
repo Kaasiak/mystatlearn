@@ -1,5 +1,5 @@
-from multiprocessing.sharedctypes import Value
 import numpy as np
+from cvxopt import matrix, solvers
 
 class Classifier:
     def __init__(self):
@@ -275,3 +275,43 @@ class QDA(Classifier):
             )
         delta = np.apply_along_axis(_compute_delta, 1, X)
         return delta
+
+
+class SVM(Classifier):
+
+    def __init__(self, margin:str ='soft', C=100, kernel=None):
+        super().__init__()
+        self.kernel = kernel
+        self.C = C
+        self.margin = margin
+    
+    def fit(self, X, y):
+        self.train_y = y
+        self.train_X = X
+        n = len(X)
+        P = matrix((X * y) @ (X * y).T, tc='d')
+        q = matrix(-np.ones(n), tc='d')
+        A = matrix(y.T, tc='d')
+        b = matrix(0, tc='d')
+        if self.margin == 'soft':
+            G = matrix(np.concatenate([
+                np.eye(n), -np.eye(n)]), tc='d')
+            h = matrix(np.concatenate([
+                np.repeat(self.C / (2 * n), n), np.zeros(n)]), tc='d')
+        else:
+            G = matrix(-np.eye(n), tc='d')
+            h = matrix(np.zeros(n), tc='d')
+        solvers.options['show_progress'] = False
+        sol = solvers.qp(P, q, G, h, A, b)
+        self.lambdas = np.array(sol['x'])
+        self.w = (X * y).T @ self.lambdas
+        support = (self.lambdas > 1e-5).flatten()
+        self.bias = np.mean(
+            y[support] - np.dot(X[support], self.w.reshape(-1,1)))
+    
+    def transform(self):
+        return np.sign(self.train_X @ self.w + self.bias)
+
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        return np.sign(X @ self.w + self.bias)
+

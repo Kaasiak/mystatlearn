@@ -2,6 +2,7 @@ import numpy as np
 import plotly.graph_objs as go
 import matplotlib as mpl
 import matplotlib_inline
+import matplotlib.pyplot as plt
 
 def setup_notebook():
     matplotlib_inline.backend_inline.set_matplotlib_formats('svg')
@@ -39,3 +40,18 @@ def plotly_widgets(X, y, xs, title=None, scatter_name=None):
         title_x=0.5, font_family='Avenir'
     )
     return fig
+
+
+def plot_svm(X, labels, w, b):
+    xx = np.linspace(X[:, 0].min() - 0.1, X[:, 0].max() + 0.1)
+    a = -w[0]/w[1]
+    yy = a*xx - (b)/w[1]
+    margin = 1 / np.sqrt(np.sum(w**2))
+    yy_neg = yy - np.sqrt(1 + a**2) * margin
+    yy_pos = yy + np.sqrt(1 + a**2) * margin
+    fig, ax = plt.subplots(figsize=(6, 6))
+    ax.plot(xx, yy, "k-")
+    ax.plot(xx, yy_neg, "m--")
+    ax.plot(xx, yy_pos, "m--")
+    ax.scatter(X[:, 0], X[:, 1], c=labels, alpha=0.5, edgecolors="black")
+    return ax
