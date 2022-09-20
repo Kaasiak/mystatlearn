@@ -323,24 +323,31 @@ class SVM(Classifier):
 
 
 class KernelSVM(Classifier):
-    def __init__(self, margin:str ='soft', C=100, kernel='linear'):
+    def __init__(self, margin:str ='soft', C=100, kernel='linear', kernel_param=None):
         super().__init__()
         if kernel == 'linear':
             self.kernel = kernels.linear
         elif kernel == 'rbf':
             self.kernel = kernels.rbf
+        elif kernel == 'poly':
+            self.kernel = kernels.poly
+        elif kernel == 'sigmoid':
+            self.kernel = kernels.sigmoid
         self.C = C
         self.margin = margin
+        self.kernel_param = kernel_param
     
     def fit(self, X, y):
         self.train_y = y
         self.train_X = X
         n = len(X)
+        if self.kernel_param is None:
+            self.kernel_param = 1 / (X.shape[1])
         # setup the QP
         K = np.zeros((n, n))
         for i in range(n):
             for j in range(n):
-                K[i, j] = self.kernel(X[i, :], X[j, :])
+                K[i, j] = self.kernel(X[i, :], X[j, :], self.kernel_param)
         P = matrix(np.outer(y, y) * K, tc='d')
         q = matrix(-np.ones(n), tc='d')
         A = matrix(y.T, tc='d')
@@ -369,7 +376,12 @@ class KernelSVM(Classifier):
             self.margin_lambdas.flatten() == self.margin_lambdas.min())[0][0]
 
         # Find the bias using the first support vector
-        K0 = self.kernel(self.margin_vectors[self.support_idx], self.margin_vectors, axis=1)
+        K0 = self.kernel(
+            self.margin_vectors[self.support_idx], 
+            self.margin_vectors, 
+            self.kernel_param,
+            axis=1
+        )
         self.bias = (
             self.margin_labels[self.support_idx] 
             -  (self.margin_lambdas * self.margin_labels).T @ K0
@@ -381,7 +393,10 @@ class KernelSVM(Classifier):
         K = np.zeros((n, m))
         for j in range(m):
             K[:, j] = self.kernel(
-                self.margin_vectors, X[j, ], axis=1
+                self.margin_vectors, 
+                X[j, ], 
+                self.kernel_param,
+                axis=1
             )
         return np.sign(
             K.T @ (self.margin_lambdas * self.margin_labels) 
