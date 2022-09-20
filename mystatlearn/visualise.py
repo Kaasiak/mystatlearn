@@ -21,7 +21,6 @@ def get_boundaries(model, xlim, ylim, n):
     return xx, yy, Z
 
 def plotly_widgets(X, y, xs, title=None, scatter_name=None):
-    # create plotly figure with widgets
     fig = go.FigureWidget()
     fig.add_trace(go.Scatter(name=scatter_name))
     colors = mpl.rcParams['axes.prop_cycle'].by_key()['color']
@@ -40,7 +39,6 @@ def plotly_widgets(X, y, xs, title=None, scatter_name=None):
         title_x=0.5, font_family='Avenir'
     )
     return fig
-
 
 def plot_svm(X, labels, w, b):
     xx = np.linspace(X[:, 0].min() - 0.1, X[:, 0].max() + 0.1)

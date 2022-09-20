@@ -1,5 +1,6 @@
 import numpy as np
 from cvxopt import matrix, solvers
+from mystatlearn.utils import kernels
 
 class Classifier:
     def __init__(self):
@@ -279,9 +280,8 @@ class QDA(Classifier):
 
 class SVM(Classifier):
 
-    def __init__(self, margin:str ='soft', C=100, kernel=None):
+    def __init__(self, margin:str ='soft', C=100):
         super().__init__()
-        self.kernel = kernel
         self.C = C
         self.margin = margin
     
@@ -289,6 +289,7 @@ class SVM(Classifier):
         self.train_y = y
         self.train_X = X
         n = len(X)
+        # setup th QP
         P = matrix((X * y) @ (X * y).T, tc='d')
         q = matrix(-np.ones(n), tc='d')
         A = matrix(y.T, tc='d')
@@ -301,17 +302,88 @@ class SVM(Classifier):
         else:
             G = matrix(-np.eye(n), tc='d')
             h = matrix(np.zeros(n), tc='d')
+        # solve for Lagrange multipliers
         solvers.options['show_progress'] = False
         sol = solvers.qp(P, q, G, h, A, b)
         self.lambdas = np.array(sol['x'])
-        self.w = (X * y).T @ self.lambdas
-        support = (self.lambdas > 1e-5).flatten()
+        # find the support vecotrs
+        if self.margin == 'hard':
+            support = (self.lambdas > 1e-5)
+        else:
+            support = (self.lambdas > 1e-5) & (self.lambdas < self.C / (2 * n))
+        support = support.flatten()
+        # get the hyperplane and the bias
+        self.w = (self.train_X * y).T @ self.lambdas
         self.bias = np.mean(
-            y[support] - np.dot(X[support], self.w.reshape(-1,1)))
-    
-    def transform(self):
-        return np.sign(self.train_X @ self.w + self.bias)
+            y[support] - X[support] @ self.w.reshape(-1,1)
+        )
 
     def predict(self, X: np.ndarray) -> np.ndarray:
-        return np.sign(X @ self.w + self.bias)
+            return np.sign(X @ self.w + self.bias)
 
+
+class KernelSVM(Classifier):
+    def __init__(self, margin:str ='soft', C=100, kernel='linear'):
+        super().__init__()
+        if kernel == 'linear':
+            self.kernel = kernels.linear
+        elif kernel == 'rbf':
+            self.kernel = kernels.rbf
+        self.C = C
+        self.margin = margin
+    
+    def fit(self, X, y):
+        self.train_y = y
+        self.train_X = X
+        n = len(X)
+        # setup the QP
+        K = np.zeros((n, n))
+        for i in range(n):
+            for j in range(n):
+                K[i, j] = self.kernel(X[i, :], X[j, :])
+        P = matrix(np.outer(y, y) * K, tc='d')
+        q = matrix(-np.ones(n), tc='d')
+        A = matrix(y.T, tc='d')
+        b = matrix(0, tc='d')
+        if self.margin == 'soft':
+            G = matrix(np.vstack([
+                np.eye(n), -np.eye(n)]), tc='d')
+            h = matrix(np.concatenate([
+                np.repeat(self.C / (2 * n), n), np.zeros(n)]), tc='d')
+        else:
+            G = matrix(-np.eye(n), tc='d')
+            h = matrix(np.zeros(n), tc='d')
+        # solve for lagrange multipliers
+        solvers.options['show_progress'] = False
+        sol = solvers.qp(P, q, G, h, A, b)
+        self.lambdas = np.array(sol['x'])
+
+        # get the vectors inside the margin
+        self.margin_vectors_idx = (self.lambdas > 1e-5).flatten()
+        self.margin_lambdas = self.lambdas[self.margin_vectors_idx]
+        self.margin_vectors = self.train_X[self.margin_vectors_idx]
+        self.margin_labels = self.train_y[self.margin_vectors_idx]
+
+        # get one support vector
+        self.support_idx = np.argwhere(
+            self.margin_lambdas.flatten() == self.margin_lambdas.min())[0][0]
+
+        # Find the bias using the first support vector
+        K0 = self.kernel(self.margin_vectors[self.support_idx], self.margin_vectors, axis=1)
+        self.bias = (
+            self.margin_labels[self.support_idx] 
+            -  (self.margin_lambdas * self.margin_labels).T @ K0
+        )
+
+    def predict(self, X):
+        m = len(X)
+        n = len(self.margin_lambdas)
+        K = np.zeros((n, m))
+        for j in range(m):
+            K[:, j] = self.kernel(
+                self.margin_vectors, X[j, ], axis=1
+            )
+        return np.sign(
+            K.T @ (self.margin_lambdas * self.margin_labels) 
+            + self.bias
+        )
