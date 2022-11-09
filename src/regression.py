@@ -1,5 +1,5 @@
 import numpy as np
-from mystatlearn.interpolation import BSpline, CubicSpline
+from src.interpolation import BSpline, CubicSpline
 
 class Regressor:
     def __init__(self):

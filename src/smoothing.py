@@ -1,5 +1,5 @@
 import numpy as np
-from mystatlearn.utils.kernels import gaussian, epanechnikov, uniform, triangular
+from src.utils.kernels import gaussian, epanechnikov, uniform, triangular
 
 class KDE():
     def __init__(self, kernel='gaussian', bandwidth=1):

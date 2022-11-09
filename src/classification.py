@@ -1,6 +1,6 @@
 import numpy as np
 from cvxopt import matrix, solvers
-from mystatlearn.utils import kernels
+from src.utils import kernels
 
 class Classifier:
     def __init__(self):
