@@ -23,3 +23,21 @@ def sigmoid(x, y, gamma, axis=None):
         return np.tanh(x @ y.T * gamma)
     else:
         return np.tanh(x @ y * gamma)
+
+def gaussian(x):
+    return 1 / (np.sqrt(2 * np.pi)) * np.exp(- x**2 / 2)
+
+def epanechnikov(x):
+    k = 3 / (4 * np.sqrt(5)) * (1 - x**2 / 5)
+    k[np.abs(x) > np.sqrt(5)] = 0
+    return k
+
+def triangular(x):
+    k = 1 / np.sqrt(6) * (1 - np.abs(x) / np.sqrt(6))
+    k[np.abs(x) > np.sqrt(6)] = 0
+    return k
+
+def uniform(x):
+    k = np.zeros(len(x))
+    k[np.abs(x) <= np.sqrt(3)] = 1 / (2 * np.sqrt(3))
+    return k
